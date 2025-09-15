@@ -35,6 +35,13 @@ jobs:
             # Install certbot if not installed
             sudo apt-get update
             sudo apt-get install -y certbot
+            sudo ufw allow 22/tcp      # SSH
+            sudo ufw allow 7880/tcp    # LiveKit WS/WSS
+            sudo ufw allow 5349/tcp    # TURN TLS
+            sudo ufw allow 50000:60000/udp  # WebRTC UDP
+            sudo ufw allow 1935/tcp    # RTMP
+            sudo ufw allow 8080/tcp    # WHIP
+            sudo ufw --force enable
 
             # Setup repo
             if [ ! -d "/opt/livekit/.git" ]; then
