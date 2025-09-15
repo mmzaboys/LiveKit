@@ -1,4 +1,4 @@
-name: Deploy LiveKit to GCP VM
+name: Deploy LiveKit to GCP VM (Reset Docker)
 
 on:
   push:
@@ -20,11 +20,16 @@ jobs:
           key: |
             ${{ secrets.SERVERSSHKEY }}
           script: |
-            # Update and install prerequisites
+            # Update packages and install prerequisites
             sudo apt-get update -y
-            sudo apt-get install -y curl git ufw
+            sudo apt-get install -y git ufw curl certbot
 
-            # Install Docker if missing
+            # Remove Docker if it exists
+            sudo systemctl stop docker || true
+            sudo apt-get remove -y docker docker-engine docker.io containerd runc || true
+            sudo rm -rf /var/lib/docker /etc/docker
+
+            # Install Docker
             curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
             sh /tmp/get-docker.sh
 
@@ -32,15 +37,13 @@ jobs:
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
 
-            # Enable and start Docker service
+            # Enable and start Docker
             sudo systemctl enable docker
             sudo systemctl start docker
 
-            # Install certbot for SSL certificates
-            sudo apt-get install -y certbot
-
-            # Configure firewall
+            # Configure firewall (including HTTP for Certbot)
             sudo ufw allow 22/tcp      # SSH
+            sudo ufw allow 80/tcp      # HTTP for Certbot
             sudo ufw allow 7880/tcp    # LiveKit WS/WSS
             sudo ufw allow 5349/tcp    # TURN TLS
             sudo ufw allow 50000:60000/udp  # WebRTC UDP
@@ -48,17 +51,17 @@ jobs:
             sudo ufw allow 8080/tcp    # WHIP
             sudo ufw --force enable
 
-            # Setup LiveKit repository
-            if [ ! -d "/opt/livekit/.git" ]; then
-              sudo mkdir -p /opt/livekit
-              sudo chown ${{ secrets.SERVERUSER }}:${{ secrets.SERVERUSER }} /opt/livekit
-              git clone https://github.com/mmzaboys/LiveKit.git /opt/livekit
+            # Setup LiveKit repository in home folder
+            LIVEKIT_DIR="$HOME/livekit"
+            if [ ! -d "$LIVEKIT_DIR/.git" ]; then
+              rm -rf "$LIVEKIT_DIR"
+              git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
             else
-              cd /opt/livekit
+              cd "$LIVEKIT_DIR"
               git pull origin main
             fi
 
-            cd /opt/livekit
+            cd "$LIVEKIT_DIR"
 
             # Stop any running containers
             docker compose down || true
