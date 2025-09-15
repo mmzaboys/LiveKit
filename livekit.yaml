@@ -1,0 +1,32 @@
+port: 7880
+bind_addresses:
+    - ""
+rtc:
+    tcp_port: 7881
+    port_range_start: 50000
+    port_range_end: 60000
+    use_external_ip: true
+    enable_loopback_candidate: false
+redis:
+    address: localhost:6379
+    username: ""
+    password: ""
+    db: 0
+    use_tls: false
+    sentinel_master_name: ""
+    sentinel_username: ""
+    sentinel_password: ""
+    sentinel_addresses: []
+    cluster_addresses: []
+    max_redirects: null
+turn:
+  enabled: true
+  tls_port: 5349
+  #domain: turn.myhost.com
+  #cert_file: /path/to/turn.crt
+  #key_file: /path/to/turn.key
+ingress:
+    #rtmp_base_url: rtmp://livekitest.duckdns.org:1935/x
+    whip_base_url: http:///w
+keys:
+    APIMGpn7kZ7YUgU: NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
