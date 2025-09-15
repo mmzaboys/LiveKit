@@ -22,8 +22,38 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # Install Docker if missing
+            curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+            sh /tmp/get-docker.sh
+
+            # Install docker-compose v2
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod 755 /usr/local/bin/docker-compose
+
+            sudo systemctl enable docker
+
+            # Install certbot if not installed
+            sudo apt-get update
+            sudo apt-get install -y certbot
+
+            # Setup repo
+            if [ ! -d "/opt/livekit/.git" ]; then
+              sudo mkdir -p /opt/livekit
+              sudo chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} /opt/livekit
+              git clone https://github.com/mmzaboys/LiveKit.git /opt/livekit
+            else
+              cd /opt/livekit
+              git pull origin main
+            fi
+
             cd /opt/livekit
-            git pull origin main
-            docker compose down
+
+            # Stop containers
+            docker compose down || true
+
+            # Create or renew certificates
+            sudo certbot certonly --standalone -n --agree-tos -m youremail@example.com \
+              -d livekitsecrets.gleeze.com
+
+            # Start containers
             docker compose up -d
-  
