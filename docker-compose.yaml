@@ -21,6 +21,17 @@ services:
     network_mode: "host"
     volumes:
       - ./redis.conf:/etc/redis.conf
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    network_mode: "host"
   egress:
     image: livekit/egress:latest
     restart: unless-stopped
