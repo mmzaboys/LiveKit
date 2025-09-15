@@ -1,4 +1,4 @@
-name: Deploy LiveKit to GCP VM (Reset Docker)
+name: Deploy LiveKit to GCP VM
 
 on:
   push:
@@ -20,28 +20,28 @@ jobs:
           key: |
             ${{ secrets.SERVERSSHKEY }}
           script: |
-            # Update packages and install prerequisites
+            # --- Update packages and install prerequisites ---
             sudo apt-get update -y
             sudo apt-get install -y git ufw curl certbot
 
-            # Remove Docker if it exists
+            # --- Remove Docker if exists ---
             sudo systemctl stop docker || true
             sudo apt-get remove -y docker docker-engine docker.io containerd runc || true
             sudo rm -rf /var/lib/docker /etc/docker
 
-            # Install Docker
+            # --- Install Docker ---
             curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
             sh /tmp/get-docker.sh
 
-            # Install docker-compose v2
+            # --- Install docker-compose v2 ---
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
 
-            # Enable and start Docker
+            # --- Enable and start Docker ---
             sudo systemctl enable docker
             sudo systemctl start docker
 
-            # Configure firewall (including HTTP for Certbot)
+            # --- Configure firewall (open HTTP for Certbot) ---
             sudo ufw allow 22/tcp      # SSH
             sudo ufw allow 80/tcp      # HTTP for Certbot
             sudo ufw allow 7880/tcp    # LiveKit WS/WSS
@@ -51,26 +51,20 @@ jobs:
             sudo ufw allow 8080/tcp    # WHIP
             sudo ufw --force enable
 
-            # Setup LiveKit repository in home folder
+            # --- Setup LiveKit repository in home folder ---
             LIVEKIT_DIR="$HOME/livekit"
-            if [ ! -d "$LIVEKIT_DIR/.git" ]; then
-              rm -rf "$LIVEKIT_DIR"
-              git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
-            else
-              cd "$LIVEKIT_DIR"
-              git pull origin main
-            fi
-
+            rm -rf "$LIVEKIT_DIR"
+            git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
             cd "$LIVEKIT_DIR"
 
-            # Stop any running containers
-            docker compose down || true
+            # --- Stop any running containers ---
+            sudo docker compose down || true
 
-            # Create or renew SSL certificates
+            # --- Create or renew SSL certificates ---
             sudo certbot certonly --standalone -n --agree-tos -m mahmoudmuhammed255@gmail.com \
               -d livekitsecrets.gleeze.com
 
-            # Start LiveKit containers
-            docker compose up -d
+            # --- Start LiveKit containers ---
+            sudo docker compose up -d
 
             echo "Deployment completed successfully."
