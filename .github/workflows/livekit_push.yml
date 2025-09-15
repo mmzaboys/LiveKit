@@ -18,9 +18,9 @@ jobs:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SERVERIP }}
+          username: ${{ secrets.SERVERUSER }}
+          key: ${{ secrets.SERVERSSHKEY }}
           script: |
             # Install Docker if missing
             curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
