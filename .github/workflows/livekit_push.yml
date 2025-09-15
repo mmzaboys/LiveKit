@@ -1,4 +1,4 @@
-name: LiveKit Config Pipeline
+name: Deploy LiveKit to GCP VM
 
 on:
   push:
@@ -6,35 +6,40 @@ on:
       - main
 
 jobs:
-  validate:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Validate docker-compose
-        run: docker compose config
-
-      - name: Deploy to server
+      - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
           username: ${{ secrets.SERVERUSER }}
-          key: ${{ secrets.SERVERSSHKEY }}
+          key: |
+            ${{ secrets.SERVERSSHKEY }}
           script: |
+            # Update and install prerequisites
+            sudo apt-get update -y
+            sudo apt-get install -y curl git ufw
+
             # Install Docker if missing
             curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
             sh /tmp/get-docker.sh
 
             # Install docker-compose v2
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod 755 /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
 
+            # Enable and start Docker service
             sudo systemctl enable docker
+            sudo systemctl start docker
 
-            # Install certbot if not installed
-            sudo apt-get update
+            # Install certbot for SSL certificates
             sudo apt-get install -y certbot
+
+            # Configure firewall
             sudo ufw allow 22/tcp      # SSH
             sudo ufw allow 7880/tcp    # LiveKit WS/WSS
             sudo ufw allow 5349/tcp    # TURN TLS
@@ -43,7 +48,7 @@ jobs:
             sudo ufw allow 8080/tcp    # WHIP
             sudo ufw --force enable
 
-            # Setup repo
+            # Setup LiveKit repository
             if [ ! -d "/opt/livekit/.git" ]; then
               sudo mkdir -p /opt/livekit
               sudo chown ${{ secrets.SERVERUSER }}:${{ secrets.SERVERUSER }} /opt/livekit
@@ -55,12 +60,14 @@ jobs:
 
             cd /opt/livekit
 
-            # Stop containers
+            # Stop any running containers
             docker compose down || true
 
-            # Create or renew certificates
+            # Create or renew SSL certificates
             sudo certbot certonly --standalone -n --agree-tos -m mahmoudmuhammed255@gmail.com \
               -d livekitsecrets.gleeze.com
 
-            # Start containers
+            # Start LiveKit containers
             docker compose up -d
+
+            echo "Deployment completed successfully."
