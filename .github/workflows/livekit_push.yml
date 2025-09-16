@@ -65,6 +65,6 @@ jobs:
               -d livekitsecrets.gleeze.com
 
             # --- Start LiveKit containers ---
-            sudo docker compose up 
+            sudo docker compose up -d
             ######################
             echo "Deployment completed successfully."
