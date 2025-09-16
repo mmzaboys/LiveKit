@@ -21,14 +21,14 @@ services:
     network_mode: "host"
     volumes:
       - ./redis.conf:/etc/redis.conf
-  caddy:
-    image: livekit/caddyl4
-    command: run --config /etc/caddy.yaml --adapter yaml
-    restart: unless-stopped
-    network_mode: "host"
-    volumes:
-      - ./caddy.yaml:/etc/caddy.yaml
-      - ./caddy_data:/data
+  #caddy:
+   # image: livekit/caddyl4
+   # command: run --config /etc/caddy.yaml --adapter yaml
+   # restart: unless-stopped
+   # network_mode: "host"
+   # volumes:
+   #   - ./caddy.yaml:/etc/caddy.yaml
+   #   - ./caddy_data:/data
   egress:
     image: livekit/egress:latest
     restart: unless-stopped
