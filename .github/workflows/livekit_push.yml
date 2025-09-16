@@ -61,8 +61,8 @@ jobs:
             sudo docker compose down || true
 
             # --- Create or renew SSL certificates ---
-            sudo certbot certonly --standalone -n --agree-tos -m mahmoudmuhammed255@gmail.com \
-              -d livekitsecrets.gleeze.com
+            #sudo certbot certonly --standalone -n --agree-tos -m mahmoudmuhammed255@gmail.com \
+             # -d livekitsecrets.gleeze.com
 
             # --- Start LiveKit containers ---
             sudo docker compose up -d
