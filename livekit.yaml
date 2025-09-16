@@ -9,7 +9,7 @@ rtc:
     enable_loopback_candidate: false
 redis:
     address: localhost:6379
-    username: ""
+    username: ""  
     password: ""
     db: 0
     use_tls: false
@@ -20,7 +20,7 @@ redis:
     cluster_addresses: []
     max_redirects: null
 turn:
-  enabled: true
+  enabled: false
   tls_port: 5349
   domain: Livekitsecrets.gleeze.com
   #cert_file: /etc/livekit/certs/livekit.crt

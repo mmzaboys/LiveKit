@@ -19,7 +19,7 @@ apps:
           - match:
             - tls:
                 sni:
-                  - "turn-tes.duckdns.org"
+                  - "Livekitsecrets.gleeze.com"
             handle:
               - handler: tls
               - handler: proxy
