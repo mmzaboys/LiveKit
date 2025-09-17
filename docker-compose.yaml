@@ -9,9 +9,8 @@ services:
     network_mode: "host"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
-      - ./certbot/conf:/etc/letsencrypt     # mount certs read-only so TURN can use them
 
-  # SIP service (if you use it)
+  # SIP service
   sip:
     image: livekit/sip
     command: --config /etc/config.yaml
@@ -20,7 +19,7 @@ services:
     volumes:
       - ./config.yaml:/etc/config.yaml
 
-  # Redis (host mode)
+  # Redis
   redis:
     image: redis:7-alpine
     command: redis-server /etc/redis.conf
@@ -29,23 +28,21 @@ services:
     volumes:
       - ./redis.conf:/etc/redis.conf
 
-  # Nginx - runs in host network so it can bind ports 80/443 directly
+  # Nginx
   nginx:
     container_name: nginx
     restart: unless-stopped
     network_mode: "host"
-    ports:
-      - 80:80
-      - 443:443
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./certbot/www:/var/www/certbot      # webroot for ACME challenges
-      - ./certbot/conf:/etc/letsencrypt    # cert storage (read so nginx can load them)
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
 
-  # Certbot (one-shot to obtain certs using webroot). Use array-style command to avoid parsing issues
-    certbot:
+  # Certbot - FIXED INDENTATION
+  certbot:
     image: certbot/certbot
     container_name: certbot
+    network_mode: "host"
     volumes: 
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
@@ -61,8 +58,7 @@ services:
       - livekitsecrets.gleeze.com
       - --agree-tos
 
-  
-  # LiveKit egress (needs CAP_SYS_ADMIN)
+  # Egress
   egress:
     image: livekit/egress:latest
     restart: unless-stopped
@@ -74,7 +70,7 @@ services:
     cap_add:
       - CAP_SYS_ADMIN
 
-  # LiveKit ingress
+  # Ingress
   ingress:
     image: livekit/ingress:latest
     restart: unless-stopped
