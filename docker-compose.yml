@@ -9,6 +9,7 @@ services:
     network_mode: "host"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
+      - ./nginx/certbot/conf:/etc/letsencrypt
 
   # SIP service
   sip:
@@ -18,7 +19,6 @@ services:
     network_mode: "host"
     volumes:
       - ./config.yaml:/etc/config.yaml
-      - ./nginx/certbot/conf:/etc/letsencrypt
 
 
   # Redis
