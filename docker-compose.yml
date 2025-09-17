@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
   # LiveKit server
@@ -35,11 +34,6 @@ services:
     restart: unless-stopped
     env_file: .env
     network_mode: "host"
-    ports:
-      - 80:80
-      - 443:443
-    depends_on:
-      - livekit # Your application service
     volumes:
       - ./nginx/secure/:/etc/nginx/templates/
       - /etc/localtime:/etc/localtime:ro

@@ -1,74 +1,80 @@
 #!/bin/bash
 
+set -e
+
 # Source the .env file
 if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-if ! [ -x "$(command -v docker compose)" ]; then
-    echo 'Error: docker compose is not installed.' >&2
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: Docker is not installed." >&2
+    exit 1
+fi
+
+if ! command -v docker-compose >/dev/null 2>&1 && ! command -v "docker compose" >/dev/null 2>&1; then
+    echo "Error: Docker Compose is not installed." >&2
     exit 1
 fi
 
 domains=(${APP_DOMAIN})
-rsa_key_size=4096
+echo "Domains: ${domains[*]}"
+
+rsa_key_size=2048
 data_path="./nginx/certbot"
-email="${SSL_EMAIL}" # Adding a valid address is strongly recommended
-staging=1 # Set to 1 if you're testing your setup to avoid hitting request limits
+email="${SSL_EMAIL:-}" # Adding a valid address is recommended
+staging=1 # Set to 0 for production
 
-if [ -d "$data_path" ]; then
-    read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
-    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-        exit
-    fi
-fi
+# Create necessary folders
+mkdir -p "$data_path/conf/live/$domains"
 
-if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
+# Download recommended TLS parameters
+if [ ! -f "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -f "$data_path/conf/ssl-dhparams.pem" ]; then
     echo "### Downloading recommended TLS parameters ..."
     mkdir -p "$data_path/conf"
-    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf >"$data_path/conf/options-ssl-nginx.conf"
-    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem >"$data_path/conf/ssl-dhparams.pem"
-    echo
+    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf \
+        -o "$data_path/conf/options-ssl-nginx.conf"
+    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem \
+        -o "$data_path/conf/ssl-dhparams.pem"
 fi
 
-echo "### Creating dummy certificate for $domains ..."
+# Create dummy certificate
+echo "### Creating dummy certificate for ${domains[*]} ..."
 path="/etc/letsencrypt/live/$domains"
-mkdir -p "$data_path/conf/live/$domains"
-docker compose -f "docker-compose.yml" run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
+docker compose run --rm --entrypoint "\
+  openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1 \
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
     -subj '/CN=localhost'" certbot
-echo
 
-echo "### Starting nginx ..."
-docker compose  -f "docker-compose.yml" up --force-recreate -d nginx
-echo
+# Start Nginx
+echo "### Starting Nginx ..."
+docker compose up -d nginx
 
-echo "### Deleting dummy certificate for $domains ..."
-docker compose  -f "docker-compose.yml" run --rm --entrypoint "\
+# Delete dummy certificate
+echo "### Deleting dummy certificate ..."
+docker compose run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
   rm -Rf /etc/letsencrypt/archive/$domains && \
   rm -Rf /etc/letsencrypt/renewal/$domains.conf" certbot
-echo
 
-echo "### Requesting Let's Encrypt certificate for $domains ..."
-#Join $domains to -d args
+# Prepare domain arguments for certbot
 domain_args=""
 for domain in "${domains[@]}"; do
     domain_args="$domain_args -d $domain"
 done
 
-# Select appropriate email arg
-case "$email" in
-"") email_arg="--register-unsafely-without-email" ;;
-*) email_arg="--email $email" ;;
-esac
+# Email argument
+email_arg="--register-unsafely-without-email"
+[ -n "$email" ] && email_arg="--email $email"
 
-# Enable staging mode if needed
-if [ $staging != "0" ]; then staging_arg="--staging"; fi
+# Staging argument
+staging_arg=""
+[ "$staging" -ne 0 ] && staging_arg="--staging"
 
-docker compose -f "docker-compose.yml" run --rm --entrypoint "\
+# Request Let's Encrypt certificate
+echo "### Requesting Let's Encrypt certificate ..."
+docker compose run --rm --entrypoint "\
   certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
     $email_arg \
@@ -76,7 +82,9 @@ docker compose -f "docker-compose.yml" run --rm --entrypoint "\
     --rsa-key-size $rsa_key_size \
     --agree-tos \
     --force-renewal" certbot
-echo
 
-#echo "### Reloading nginx ..."
-docker compose -f "docker-compose.yml" exec nginx nginx -s reload
+# Reload Nginx to use new certificates
+echo "### Reloading Nginx ..."
+docker compose exec nginx nginx -s reload
+
+echo "### All done!"
