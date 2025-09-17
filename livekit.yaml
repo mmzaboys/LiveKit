@@ -20,15 +20,15 @@ redis:
     cluster_addresses: []
     max_redirects: null
 turn:
-  enabled: true
+  enabled: false
   domain: livekitsecrets.gleeze.com
-  cert_file: /etc/letsencrypt/live/livekitsecrets.gleeze.com/fullchain.pem
-  key_file: /etc/letsencrypt/live/livekitsecrets.gleeze.com/privkey.pem
+  cert_file: /etc/letsencrypt/live/${APP_DOMAIN}/fullchain.pem
+  key_file: /etc/letsencrypt/live/${APP_DOMAIN}/privkey.pem
   tls_port: 5349
   udp_port: 3478
 
 ingress:
-    rtmp_base_url: rtmp://Livekitsecrets.gleeze.com:1935/x
-    whip_base_url: http:///Livekitsecrets.gleeze.com/w
+    rtmp_base_url: rtmp://${APP_DOMAIN}:1935/x
+    whip_base_url: http:///${APP_DOMAIN}/w
 keys:
     APIMGpn7kZ7YUgU: NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
