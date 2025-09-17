@@ -29,14 +29,17 @@ services:
     volumes: 
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    command: certonly --webroot \
-      -w /var/www/certbot \
-      --staging \
-      --non-interactive \
-      --force-renewal \
-      --email mahmoudmuhammed255@gmail.com \
-      -d livekitsecrets.gleeze.com \
-      --agree-tos
+    command: [
+      "certonly",
+      "--webroot",
+      "-w", "/var/www/certbot",
+      "--staging",
+      "--non-interactive",
+      "--force-renewal",
+      "--email", "mahmoudmuhammed255@gmail.com",
+      "-d", "livekitsecrets.gleeze.com",
+      "--agree-tos"
+    ]
   nginx:
         container_name: nginx
         restart: unless-stopped
