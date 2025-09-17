@@ -39,7 +39,7 @@ docker compose  -f "docker-compose.yaml" up --force-recreate -d nginx
 echo
 
 echo "### Deleting dummy certificate for $domains ..."
-docker compose  -f "docker-compose.yml" run --rm --entrypoint "\
+docker compose  -f "docker-compose.yaml" run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
   rm -Rf /etc/letsencrypt/archive/$domains && \
   rm -Rf /etc/letsencrypt/renewal/$domains.conf" certbot
