@@ -22,10 +22,10 @@ redis:
 turn:
   enabled: true
   domain: livekitsecrets.gleeze.com
-  cert_file: /etc/ssl/livekit/certs/fullchain.pem
-  key_file: /etc/ssl/livekit/private/privkey.pem
+  cert_file: /etc/letsencrypt/live/livekitsecrets.gleeze.com/fullchain.pem
+  key_file: /etc/letsencrypt/live/livekitsecrets.gleeze.com/privkey.pem
   tls_port: 5349
-
+  
 ingress:
     rtmp_base_url: rtmp://Livekitsecrets.gleeze.com:1935/x
     whip_base_url: http:///w
