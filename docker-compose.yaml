@@ -31,7 +31,6 @@ services:
 
   # Nginx - runs in host network so it can bind ports 80/443 directly
   nginx:
-    image: nginx:alpine
     container_name: nginx
     restart: unless-stopped
     network_mode: "host"
