@@ -15,6 +15,7 @@ services:
   sip:
     image: livekit/sip
     command: --config /etc/config.yaml
+    env_file: .env
     restart: unless-stopped
     network_mode: "host"
     volumes:
@@ -50,9 +51,14 @@ services:
       - ./nginx/certbot/conf:/etc/letsencrypt
       - ./nginx/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
-
-
-
+  
+  agent:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: >
+      python agent.py
 
   # Egress
   egress:

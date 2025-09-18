@@ -10,6 +10,6 @@ redis:
     sentinel_addresses: []
     cluster_addresses: []
     max_redirects: null
-api_key: APIMGpn7kZ7YUgU
-api_secret: NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
-ws_url: wss://Livekitsecrets.gleeze.com
+api_key: ${API_KEY}
+api_secret: ${API_SECRET}
+ws_url: wss://${APP_DOMAIN}
