@@ -10,7 +10,7 @@ from livekit.plugins import (
 )
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-load_dotenv(".env")
+load_dotenv(".env.local")
 
 class Assistant(Agent):
     def __init__(self) -> None:

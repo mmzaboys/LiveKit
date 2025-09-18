@@ -5,3 +5,4 @@ livekit-plugins-cartesia
 livekit-plugins-silero
 livekit-plugins-turn-detector
 python-dotenv
+livekit-plugins-noise-cancellation~=0.2

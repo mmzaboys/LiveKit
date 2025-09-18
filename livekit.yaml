@@ -6,24 +6,14 @@ rtc:
     port_range_start: 50000
     port_range_end: 60000
     use_external_ip: true
-    enable_loopback_candidate: false
+    enable_loopback_candidate: true
 redis:
     address: localhost:6379
-    username: ""  
-    password: ""
-    db: 0
-    use_tls: false
-    sentinel_master_name: ""
-    sentinel_username: ""
-    sentinel_password: ""
-    sentinel_addresses: []
-    cluster_addresses: []
-    max_redirects: null
 turn:
-  enabled: false
+  enabled: true
   domain: livekitsecrets.gleeze.com
-  cert_file: /etc/letsencrypt/live/${APP_DOMAIN}/fullchain.pem
-  key_file: /etc/letsencrypt/live/${APP_DOMAIN}/privkey.pem
+  cert_file: ./nginx/certbot/conf/live/${APP_DOMAIN}/fullchain.pem
+  key_file: ./nginx/certbot/conf/live/${APP_DOMAIN}/privkey.pem
   tls_port: 5349
   udp_port: 3478
 
