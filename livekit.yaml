@@ -31,4 +31,4 @@ ingress:
     rtmp_base_url: rtmp://${APP_DOMAIN}:1935/x
     whip_base_url: http:///${APP_DOMAIN}/w
 keys:
-    ${API_KEY}: ${API_SECRET}
+    ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}

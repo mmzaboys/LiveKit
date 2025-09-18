@@ -10,6 +10,6 @@ redis:
     sentinel_addresses: []
     cluster_addresses: []
     max_redirects: null
-api_key: ${API_KEY}
-api_secret: ${API_SECRET}
+api_key: ${LIVEKIT_API_KEY}
+api_secret: ${LIVEKIT_API_SECRET}
 ws_url: wss://${APP_DOMAIN}

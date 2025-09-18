@@ -10,6 +10,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .env.local .
-copy agent.py .
+COPY .env .
+COPY agent.py .
 CMD ["python", "agent.py"]
