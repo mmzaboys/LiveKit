@@ -1,20 +1,14 @@
-FROM python:3.9-slim
-
-RUN apt-get update && apt-get install -y \
-    ffmpeg git curl build-essential \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# انسخ requirements بس الأول علشان Docker cache
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+RUN pip install uv
 
-# انسخ باقي الملفات
-COPY . .
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
 
-# نزّل الموديلات المطلوبة قبل التشغيل
-RUN python3 agent.py download-files
+COPY src ./src
+COPY .env.local ./
 
-# شغل الـ agent
-CMD ["python", "agent.py","start"]
+CMD ["uv", "run", "python", "src/main.py"]

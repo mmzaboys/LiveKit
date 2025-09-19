@@ -5,7 +5,6 @@ services:
     image: livekit/livekit-server:latest
     command: --config /etc/livekit.yaml
     restart: unless-stopped
-    env_file: .env
     network_mode: "host"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
@@ -17,7 +16,6 @@ services:
     command: --config /etc/config.yaml
     env_file: .env
     restart: unless-stopped
-    network_mode: "host"
     volumes:
       - ./config.yaml:/etc/config.yaml
 
@@ -53,13 +51,10 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
   
   agent:
-    build: .
-    restart: unless-stopped
-    env_file:
-      - .env
-    command: >
-      python agent.py
-
+    build: ./agent-starter-python
+    env_file: ./agent-starter-python/.env.local
+    network_mode: "host"
+  
   # Egress
   egress:
     image: livekit/egress:latest

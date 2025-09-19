@@ -86,5 +86,6 @@ docker compose run --rm --entrypoint "\
 # Reload Nginx to use new certificates
 echo "### Reloading Nginx ..."
 docker compose exec nginx nginx -s reload
+chmod o+x ./configfiles.sh
 
 echo "### All done!"
