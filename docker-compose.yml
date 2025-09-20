@@ -16,6 +16,9 @@ services:
     command: --config /etc/config.yaml
     env_file: .env
     restart: unless-stopped
+    network_mode: "host"
+
+
     volumes:
       - ./config.yaml:/etc/config.yaml
 
