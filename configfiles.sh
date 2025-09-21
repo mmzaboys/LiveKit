@@ -48,7 +48,7 @@ EOF
 cat > "./egress.yaml" <<EOF
 redis:
     address: localhost:6379
-prometheus_port: 1000
+prometheus_port: 60001
 log_level: info    
 api_key: ${LIVEKIT_API_KEY}
 api_secret: ${LIVEKIT_API_SECRET}
@@ -56,8 +56,20 @@ ws_url: wss://${LIVEKIT_DOMAIN}
 EOF
 
 cat > "./nginx/secure/default.conf.template" <<EOF
+server {
+    listen 80;
+    server_name livekitsecret.gleeze.com;
 
-listen 443 ssl;
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+server {
+    listen 443 ssl;
     server_name ${LIVEKIT_DOMAIN};
     server_tokens off;
     client_max_body_size 20M;
