@@ -1,9 +1,0 @@
-python-dotenv
-livekit
-numpy
-av
-sympy
-onnxruntime
-transformers
-livekit-plugins-noise-cancellation
-ruff
