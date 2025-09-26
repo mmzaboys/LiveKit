@@ -1,18 +1,86 @@
-name: Test Connection
-on: workflow_dispatch
+name: Deploy LiveKit to AWS VM
+
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
-          username: ${{ secrets.SERVERUSER }}  # Change if needed
+          username: ubuntu  # Use 'ec2-user' if Amazon Linux
           key: ${{ secrets.SERVERSSHKEY }}
+          port: 22
+          timeout: 300s
+          command_timeout: 30m
+          script_stop: true
+          debug: true
           script: |
-            echo "✅ Connected to: $(hostname)"
-            echo "✅ IP: $(hostname -I)"
-            echo "✅ Success!"
-            ##############
+            set -e
+            echo "=== Starting deployment ==="
+            echo "Connected as: $(whoami)"
+            echo "Working directory: $(pwd)"
+            
+            # Update system
+            echo "=== Updating system ==="
+            sudo apt-get update -y
+            sudo apt-get upgrade -y
+            
+            # Install prerequisites
+            echo "=== Installing prerequisites ==="
+            sudo apt-get install -y curl git
+            
+            # Install Docker
+            echo "=== Installing Docker ==="
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            
+            # Add user to docker group
+            sudo usermod -aG docker $USER
+            
+            # Install Docker Compose
+            echo "=== Installing Docker Compose ==="
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            
+            # Start Docker service
+            echo "=== Starting Docker ==="
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            
+            # Clone and setup LiveKit
+            echo "=== Setting up LiveKit ==="
+            cd $HOME
+            git clone https://github.com/mmzaboys/LiveKit.git livekit
+            cd livekit
+            
+            # Create environment file
+            cat > .env << EOF
+            APP_DOMAIN=livekitsecret.gleeze.com
+            SSL_EMAIL=mahmoudmuhammed255@gmail.com
+            LIVEKIT_DOMAIN=livekitsecret.gleeze.com
+            LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
+            LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
+            EOF
+            
+            # Make scripts executable
+            chmod +x init-letsencrypt.sh configfiles.sh
+            
+            # Run setup scripts
+            ./configfiles.sh
+            ./init-letsencrypt.sh
+            
+            # Start services
+            sudo docker-compose up -d
+            
+            echo "=== Deployment completed successfully ==="
+            echo "Checking running containers:"
+            sudo docker ps
