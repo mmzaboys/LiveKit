@@ -30,7 +30,7 @@ services:
     volumes:
       - ./redis.conf:/etc/redis.conf
 
-#######################
+######################################
   nginx:
     container_name: nginx
     image: nginx:latest
