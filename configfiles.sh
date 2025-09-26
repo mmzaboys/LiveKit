@@ -53,6 +53,11 @@ log_level: info
 api_key: ${LIVEKIT_API_KEY}
 api_secret: ${LIVEKIT_API_SECRET}
 ws_url: wss://${LIVEKIT_DOMAIN}
+s3:
+  access_key: ${AWS_ACCESS_KEY_ID} 
+  secret: ${AWS_SECRET_ACCESS_KEY} 
+  region: ${AWS_DEFAULT_REGION} 
+  bucket: ${bucket} 
 EOF
 
 cat > "./nginx/secure/default.conf.template" <<EOF
