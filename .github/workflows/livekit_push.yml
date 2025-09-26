@@ -16,7 +16,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
-          username: ubuntu  # Use 'ec2-user' if Amazon Linux
+          username: ubuntu
           key: ${{ secrets.SERVERSSHKEY }}
           port: 22
           timeout: 300s
@@ -29,60 +29,91 @@ jobs:
             echo "Connected as: $(whoami)"
             echo "Working directory: $(pwd)"
             
-            # Update system
-            echo "=== Updating system ==="
+            # --- System Update (always run) ---
+            echo "=== Updating system packages ==="
             sudo apt-get update -y
-            sudo apt-get upgrade -y
             
-            # Install prerequisites
+            # --- Install prerequisites (always run) ---
             echo "=== Installing prerequisites ==="
             sudo apt-get install -y curl git
             
-            # Install Docker
-            echo "=== Installing Docker ==="
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
+            # --- Docker Installation (skip if exists) ---
+            if command -v docker &> /dev/null; then
+              echo "=== Docker already installed: $(docker --version) ==="
+            else
+              echo "=== Installing Docker ==="
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+              sudo usermod -aG docker $USER
+            fi
             
-            # Add user to docker group
-            sudo usermod -aG docker $USER
+            # --- Docker Compose Installation (skip if exists) ---
+            if command -v docker-compose &> /dev/null; then
+              echo "=== Docker Compose already installed: $(docker-compose --version) ==="
+            else
+              echo "=== Installing Docker Compose ==="
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
             
-            # Install Docker Compose
-            echo "=== Installing Docker Compose ==="
-            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            
-            # Start Docker service
-            echo "=== Starting Docker ==="
+            # --- Start Docker service ---
+            echo "=== Starting Docker service ==="
             sudo systemctl enable docker
             sudo systemctl start docker
-            LIVEKIT_DIR="$HOME/livekit"
-            sudo rm -dRf "$LIVEKIT_DIR"
-            # Clone and setup LiveKit
-            echo "=== Setting up LiveKit ==="
-            cd $HOME
-            git clone https://github.com/mmzaboys/LiveKit.git livekit
-            cd livekit
             
-            # Create environment file
-            # ✅ CORRECT - Use single quotes around EOF to prevent variable expansion
-            cat > .env << 'EOF'
-            APP_DOMAIN=livekitsecret.gleeze.com
-            SSL_EMAIL=mahmoudmuhammed255@gmail.com
-            LIVEKIT_DOMAIN=livekitsecret.gleeze.com
-            LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
-            LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
-            EOF
-                        
-            # Make scripts executable
+            # --- LiveKit Directory Setup ---
+            LIVEKIT_DIR="$HOME/livekit"
+            
+            # Remove existing LiveKit directory if it exists
+            if [ -d "$LIVEKIT_DIR" ]; then
+              echo "=== Removing existing LiveKit directory ==="
+              sudo rm -rf "$LIVEKIT_DIR"
+            fi
+            
+            # Clone fresh LiveKit repository
+            echo "=== Cloning LiveKit repository ==="
+            git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
+            cd "$LIVEKIT_DIR"
+            
+            # --- Create clean .env file ---
+            echo "=== Creating .env file ==="
+            echo "APP_DOMAIN=livekitsecret.gleeze.com" > .env
+            echo "SSL_EMAIL=mahmoudmuhammed255@gmail.com" >> .env
+            echo "LIVEKIT_DOMAIN=livekitsecret.gleeze.com" >> .env
+            echo "LIVEKIT_API_KEY=APIMGpn7kZ7YUgU" >> .env
+            echo "LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP" >> .env
+            
+            # Verify .env file
+            echo "=== .env file content ==="
+            cat .env
+            echo "=== End .env file ==="
+            
+            # --- Make scripts executable ---
+            echo "=== Making scripts executable ==="
             chmod +x init-letsencrypt.sh configfiles.sh
             
-            # Run setup scripts
+            # --- Stop any running containers from previous deployment ---
+            echo "=== Stopping any existing containers ==="
+            sudo docker-compose down || true
+            
+            # --- Run setup scripts ---
+            echo "=== Running configuration scripts ==="
             ./configfiles.sh
             ./init-letsencrypt.sh
             
-            # Start services
+            # --- Start services ---
+            echo "=== Starting LiveKit containers ==="
             sudo docker-compose up -d
             
-            echo "=== Deployment completed successfully ==="
+            # --- Wait a moment for containers to start ---
+            sleep 10
+            
+            # --- Verify deployment ---
+            echo "=== Deployment verification ==="
             echo "Checking running containers:"
             sudo docker ps
+            
+            echo "=== Checking container logs ==="
+            sudo docker-compose logs --tail=10 || echo "Logs check completed"
+            
+            echo "🎉 === Deployment completed successfully ==="
