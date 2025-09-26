@@ -55,7 +55,8 @@ jobs:
             echo "=== Starting Docker ==="
             sudo systemctl enable docker
             sudo systemctl start docker
-            
+            LIVEKIT_DIR="$HOME/livekit"
+            sudo rm -dRf "$LIVEKIT_DIR"
             # Clone and setup LiveKit
             echo "=== Setting up LiveKit ==="
             cd $HOME
@@ -63,14 +64,15 @@ jobs:
             cd livekit
             
             # Create environment file
-            cat > .env << EOF
+            # ✅ CORRECT - Use single quotes around EOF to prevent variable expansion
+            cat > .env << 'EOF'
             APP_DOMAIN=livekitsecret.gleeze.com
             SSL_EMAIL=mahmoudmuhammed255@gmail.com
             LIVEKIT_DOMAIN=livekitsecret.gleeze.com
             LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
             LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
             EOF
-            
+                        
             # Make scripts executable
             chmod +x init-letsencrypt.sh configfiles.sh
             
