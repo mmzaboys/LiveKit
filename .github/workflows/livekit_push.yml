@@ -1,87 +1,17 @@
-name: Deploy LiveKit to AWS VM
-
-on:
-  push:
-    branches:
-      - main
+name: Test Connection
+on: workflow_dispatch
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy to server via SSH
+      - name: Test SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
-          username: ${{ secrets.SERVERUSER }}
+          username: ubuntu  # Change if needed
           key: ${{ secrets.SERVERSSHKEY }}
-          script_stop: true
-          debug: true
           script: |
-            set -e
-            echo "=== Starting deployment ==="
-            
-            # Update packages and install prerequisites
-            echo "Updating packages..."
-            sudo apt-get update -y
-            sudo apt-get install -y curl git
-            
-            # Install Docker
-            if command -v docker &> /dev/null; then
-              echo "Docker is already installed: $(docker --version)"
-            else
-              echo "Installing Docker..."
-              curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
-              sh /tmp/get-docker.sh
-              sudo usermod -aG docker $USER
-            fi
-            
-            # Install Docker Compose
-            if command -v docker-compose &> /dev/null; then
-              echo "Docker Compose already installed: $(docker-compose --version)"
-            else
-              echo "Installing Docker Compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # Enable and start Docker
-            echo "Starting Docker service..."
-            sudo systemctl enable docker
-            sudo systemctl start docker
-            
-            # Setup LiveKit repository
-            LIVEKIT_DIR="$HOME/livekit"
-            echo "Setting up LiveKit in $LIVEKIT_DIR"
-            sudo rm -rf "$LIVEKIT_DIR"
-            git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
-            cd "$LIVEKIT_DIR"
-            
-            # Create environment file
-            echo "Creating environment file..."
-            cat > .env << EOF
-            APP_DOMAIN=livekitsecret.gleeze.com
-            SSL_EMAIL=mahmoudmuhammed255@gmail.com
-            LIVEKIT_DOMAIN=livekitsecret.gleeze.com
-            LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
-            LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
-            EOF
-                        
-            # Make scripts executable and run them
-            echo "Running configuration scripts..."
-            chmod +x init-letsencrypt.sh configfiles.sh
-            ./configfiles.sh
-            ./init-letsencrypt.sh
-            
-            # Start LiveKit containers
-            echo "Starting Docker containers..."
-            sudo docker-compose up -d
-            
-            # Verify deployment
-            echo "Checking if containers are running..."
-            sudo docker ps
-            
-            echo "=== Deployment completed successfully ==="
+            echo "✅ Connected to: $(hostname)"
+            echo "✅ IP: $(hostname -I)"
+            echo "✅ Success!"
