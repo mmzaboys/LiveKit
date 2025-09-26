@@ -9,7 +9,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
-          username: ubuntu  # Change if needed
+          username: ${{ secrets.SERVERUSER }}  # Change if needed
           key: ${{ secrets.SERVERSSHKEY }}
           script: |
             echo "✅ Connected to: $(hostname)"
