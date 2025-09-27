@@ -24,96 +24,84 @@ jobs:
           script_stop: true
           debug: true
           script: |
-            set -e
-            echo "=== Starting deployment ==="
-            echo "Connected as: $(whoami)"
-            echo "Working directory: $(pwd)"
-            
-            # --- System Update (always run) ---
-            echo "=== Updating system packages ==="
-            sudo apt-get update -y
-            
-            # --- Install prerequisites (always run) ---
-            echo "=== Installing prerequisites ==="
-            sudo apt-get install -y curl git
-            
-            # --- Docker Installation (skip if exists) ---
-            if command -v docker &> /dev/null; then
-              echo "=== Docker already installed: $(docker --version) ==="
-            else
-              echo "=== Installing Docker ==="
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sudo sh get-docker.sh
-              sudo usermod -aG docker $USER
-            fi
-            
-            # --- Docker Compose Installation (skip if exists) ---
-            if command -v docker-compose &> /dev/null; then
-              echo "=== Docker Compose already installed: $(docker-compose --version) ==="
-            else
-              echo "=== Installing Docker Compose ==="
-              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # --- Start Docker service ---
-            echo "=== Starting Docker service ==="
-            sudo systemctl enable docker
-            sudo systemctl start docker
-            
-            # --- LiveKit Directory Setup ---
-            LIVEKIT_DIR="$HOME/livekit"
-            
-            # Remove existing LiveKit directory if it exists
-            if [ -d "$LIVEKIT_DIR" ]; then
-              echo "=== Removing existing LiveKit directory ==="
-              sudo rm -rf "$LIVEKIT_DIR"
-            fi
-            
-            # Clone fresh LiveKit repository
-            echo "=== Cloning LiveKit repository ==="
-            git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
-            cd "$LIVEKIT_DIR"
-            
-            # --- Create clean .env file ---
-            echo "=== Creating .env file ==="
-            echo "APP_DOMAIN=livekitsecret.gleeze.com" > .env
-            echo "SSL_EMAIL=mahmoudmuhammed255@gmail.com" >> .env
-            echo "LIVEKIT_DOMAIN=livekitsecret.gleeze.com" >> .env
-            echo "LIVEKIT_API_KEY=APIMGpn7kZ7YUgU" >> .env
-            echo "LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP" >> .env
-            
-            # Verify .env file
-            echo "=== .env file content ==="
-            cat .env
-            echo "=== End .env file ==="
-            
-            # --- Make scripts executable ---
-            echo "=== Making scripts executable ==="
-            chmod +x init-letsencrypt.sh configfiles.sh
-            
-            # --- Stop any running containers from previous deployment ---
-            echo "=== Stopping any existing containers ==="
-            sudo docker-compose down || true
-            
-            # --- Run setup scripts ---
-            echo "=== Running configuration scripts ==="
-            ./configfiles.sh
-            ./init-letsencrypt.sh
-            
-            # --- Start services ---
-            echo "=== Starting LiveKit containers ==="
-            sudo docker-compose up -d
-            
-            # --- Wait a moment for containers to start ---
-            sleep 10
-            
-            # --- Verify deployment ---
-            echo "=== Deployment verification ==="
-            echo "Checking running containers:"
-            sudo docker ps
-            
-            echo "=== Checking container logs ==="
-            sudo docker-compose logs --tail=10 || echo "Logs check completed"
-            
-            echo "🎉 === Deployment completed successfully ==="
+              set -ex
+              export DEBIAN_FRONTEND=noninteractive
+              echo "=== Starting deployment ==="
+              echo "Connected as: $(whoami)"
+              echo "Working directory: $(pwd)"
+              
+              # --- System Update (always run) ---
+              echo "=== Updating system packages ==="
+              apt-get update -y
+              
+              # --- Install prerequisites (always run) ---
+              echo "=== Installing prerequisites ==="
+              apt-get install -y curl git
+              
+              # --- Docker Installation (skip if exists) ---
+              if command -v docker &> /dev/null; then
+                echo "=== Docker already installed: $(docker --version) ==="
+              else
+                echo "=== Installing Docker ==="
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sh get-docker.sh
+                usermod -aG docker $USER
+              fi
+              
+              # --- Docker Compose Installation (skip if exists) ---
+              if command -v docker-compose &> /dev/null; then
+                echo "=== Docker Compose already installed: $(docker-compose --version) ==="
+              else
+                echo "=== Installing Docker Compose ==="
+                curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                chmod +x /usr/local/bin/docker-compose
+              fi
+              
+              # --- Start Docker service ---
+              echo "=== Starting Docker service ==="
+              systemctl enable docker
+              systemctl start docker
+              
+              # --- LiveKit Directory Setup ---
+              LIVEKIT_DIR="$HOME/livekit"
+              
+              if [ -d "$LIVEKIT_DIR" ]; then
+                echo "=== Removing existing LiveKit directory ==="
+                rm -rf "$LIVEKIT_DIR"
+              fi
+              
+              echo "=== Cloning LiveKit repository ==="
+              git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
+              cd "$LIVEKIT_DIR"
+              
+              echo "=== Creating .env file ==="
+              cat <<EOF > .env
+              APP_DOMAIN=livekitsecret.gleeze.com
+              SSL_EMAIL=mahmoudmuhammed255@gmail.com
+              LIVEKIT_DOMAIN=livekitsecret.gleeze.com
+              LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
+              LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
+              EOF
+              
+              cat .env
+              
+              echo "=== Making scripts executable ==="
+              chmod +x init-letsencrypt.sh configfiles.sh
+              
+              echo "=== Stopping any existing containers ==="
+              docker-compose down || true
+              
+              echo "=== Running configuration scripts ==="
+              ./configfiles.sh
+              ./init-letsencrypt.sh
+              
+              echo "=== Starting LiveKit containers ==="
+              docker-compose up -d
+              
+              sleep 10
+              
+              echo "=== Deployment verification ==="
+              docker ps
+              docker-compose logs --tail=10 || echo "Logs check completed"
+              
+              echo "🎉 === Deployment completed successfully ==="
