@@ -25,83 +25,62 @@ jobs:
           debug: true
           script: |
               set -ex
+              echo "=== Starting deployment as root ==="
+
+              sudo -i <<'EOF'
+              set -ex
               export DEBIAN_FRONTEND=noninteractive
-              echo "=== Starting deployment ==="
+
               echo "Connected as: $(whoami)"
               echo "Working directory: $(pwd)"
-              
-              # --- System Update (always run) ---
-              echo "=== Updating system packages ==="
-              apt-get update -y
-              
-              # --- Install prerequisites (always run) ---
-              echo "=== Installing prerequisites ==="
-              apt-get install -y curl git
-              
+
+              # --- System Update ---
+              apt update -y
+              apt install -y curl git
+
               # --- Docker Installation (skip if exists) ---
               if command -v docker &> /dev/null; then
                 echo "=== Docker already installed: $(docker --version) ==="
               else
-                echo "=== Installing Docker ==="
                 curl -fsSL https://get.docker.com -o get-docker.sh
                 sh get-docker.sh
-                usermod -aG docker $USER
+                usermod -aG docker ubuntu
               fi
-              
+
               # --- Docker Compose Installation (skip if exists) ---
               if command -v docker-compose &> /dev/null; then
                 echo "=== Docker Compose already installed: $(docker-compose --version) ==="
               else
-                echo "=== Installing Docker Compose ==="
                 curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
               fi
-              
-              # --- Start Docker service ---
-              echo "=== Starting Docker service ==="
+
               systemctl enable docker
               systemctl start docker
-              
-              # --- LiveKit Directory Setup ---
-              LIVEKIT_DIR="$HOME/livekit"
-              
-              if [ -d "$LIVEKIT_DIR" ]; then
-                echo "=== Removing existing LiveKit directory ==="
-                rm -rf "$LIVEKIT_DIR"
-              fi
-              
-              echo "=== Cloning LiveKit repository ==="
+
+              LIVEKIT_DIR="/home/ubuntu/livekit"
+              rm -rf "$LIVEKIT_DIR"
               git clone https://github.com/mmzaboys/LiveKit.git "$LIVEKIT_DIR"
               cd "$LIVEKIT_DIR"
-              
-              echo "=== Creating .env file ==="
-              cat <<EOF > .env
+
+              cat <<ENV > .env
               APP_DOMAIN=livekitsecret.gleeze.com
               SSL_EMAIL=mahmoudmuhammed255@gmail.com
               LIVEKIT_DOMAIN=livekitsecret.gleeze.com
               LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
               LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
-              EOF
-              
-              cat .env
-              
-              echo "=== Making scripts executable ==="
+              ENV
+
               chmod +x init-letsencrypt.sh configfiles.sh
-              
-              echo "=== Stopping any existing containers ==="
+
               docker-compose down || true
-              
-              echo "=== Running configuration scripts ==="
               ./configfiles.sh
               ./init-letsencrypt.sh
-              
-              echo "=== Starting LiveKit containers ==="
               docker-compose up -d
-              
+
               sleep 10
-              
-              echo "=== Deployment verification ==="
               docker ps
               docker-compose logs --tail=10 || echo "Logs check completed"
-              
+              EOF
+
               echo "🎉 === Deployment completed successfully ==="
