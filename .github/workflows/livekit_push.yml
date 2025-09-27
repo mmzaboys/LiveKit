@@ -77,14 +77,14 @@ jobs:
             
             cd "$LIVEKIT_DIR"
             
-            # Create .env file
-            sudo tee .env > /dev/null <<ENV
+             cat > .env <<ENV
             APP_DOMAIN=${{ secrets.DOMAIN }}
             SSL_EMAIL=${{ secrets.EMAIL }}
             LIVEKIT_DOMAIN=${{ secrets.DOMAIN }}
             LIVEKIT_API_KEY=${{ secrets.KEY }}
             LIVEKIT_API_SECRET=${{ secrets.SECRET }}
             ENV
+            
             
             sudo chmod +x init-letsencrypt.sh configfiles.sh
             sudo chown ubuntu:ubuntu .env
