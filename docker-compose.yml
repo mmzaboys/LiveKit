@@ -56,7 +56,8 @@ services:
   #  env_file: /home/ubuntu/agent-starter-python/.env.local
   #  network_mode: "host"
   # Egress
-  #######################
+  #######################@@@@@@@@@
+  
   egress:
     image: livekit/egress:latest
     restart: unless-stopped
