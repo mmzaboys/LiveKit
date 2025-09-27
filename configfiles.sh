@@ -63,7 +63,7 @@ EOF
 cat > "./nginx/secure/default.conf.template" <<EOF
 server {
     listen 80;
-    server_name livekitsecret.gleeze.com;
+    server_name ${LIVEKIT_DOMAIN};
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -83,6 +83,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/${LIVEKIT_DOMAIN}/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
     location /rtc {
         proxy_pass http://localhost:7880;
         proxy_http_version 1.1;
@@ -92,7 +93,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 86400;
     }
-    # HTTP proxy عادي
+    
     location / {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Url-Scheme $scheme;
@@ -101,18 +102,16 @@ server {
         proxy_redirect off;
         proxy_pass http://localhost:7880; 
     }
+    
     location /agent {
         proxy_pass http://localhost:7880/agent;
         proxy_http_version 1.1;
-
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 86400s;
     }
-
-
 }
+
 EOF
