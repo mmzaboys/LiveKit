@@ -24,11 +24,9 @@ jobs:
           script_stop: true
           debug: true
           script: |
-              set -ex
               echo "=== Starting deployment as root ==="
 
               sudo -i <<'EOF'
-              set -ex
               export DEBIAN_FRONTEND=noninteractive
 
               echo "Connected as: $(whoami)"
