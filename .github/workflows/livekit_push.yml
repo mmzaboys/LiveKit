@@ -34,23 +34,24 @@ jobs:
               echo "Connected as: $(whoami)"
               echo "Working directory: $(pwd)"
 
-              # --- System Update ---
               apt update -y
               apt install -y curl git
 
-              # --- Docker Installation (skip if exists) ---
+              # --- Docker Installation ---
               if command -v docker &> /dev/null; then
                 echo "=== Docker already installed: $(docker --version) ==="
               else
+                echo "=== Installing Docker ==="
                 curl -fsSL https://get.docker.com -o get-docker.sh
                 sh get-docker.sh
                 usermod -aG docker ubuntu
               fi
 
-              # --- Docker Compose Installation (skip if exists) ---
+              # --- Docker Compose Installation ---
               if command -v docker-compose &> /dev/null; then
                 echo "=== Docker Compose already installed: $(docker-compose --version) ==="
               else
+                echo "=== Installing Docker Compose ==="
                 curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
               fi
@@ -64,11 +65,11 @@ jobs:
               cd "$LIVEKIT_DIR"
 
               cat <<ENV > .env
-              APP_DOMAIN=livekitsecret.gleeze.com
-              SSL_EMAIL=mahmoudmuhammed255@gmail.com
-              LIVEKIT_DOMAIN=livekitsecret.gleeze.com
-              LIVEKIT_API_KEY=APIMGpn7kZ7YUgU
-              LIVEKIT_API_SECRET=NUReZAOWK47i7tt26G8yKl8it8GcmyId8psiN7hhTXP
+              APP_DOMAIN=${{ secrets.DOMAIN }}
+              SSL_EMAIL=${{ secrets.EMAIL }}
+              LIVEKIT_DOMAIN=${{ secrets.DOMAIN }}
+              LIVEKIT_API_KEY=${{ secrets.KEY }}
+              LIVEKIT_API_SECRET=${{ secrets.SECRET }}
               ENV
 
               chmod +x init-letsencrypt.sh configfiles.sh
