@@ -77,14 +77,13 @@ jobs:
             
             cd "$LIVEKIT_DIR"
             
-             cat > .env <<ENV
-            APP_DOMAIN=${{ secrets.DOMAIN }}
-            SSL_EMAIL=${{ secrets.EMAIL }}
-            LIVEKIT_DOMAIN=${{ secrets.DOMAIN }}
-            LIVEKIT_API_KEY=${{ secrets.KEY }}
-            LIVEKIT_API_SECRET=${{ secrets.SECRET }}
-            ENV
+          
             
+            echo "APP_DOMAIN=${{ secrets.DOMAIN }}" > .env
+            echo "SSL_EMAIL=${{ secrets.EMAIL }}" >> .env
+            echo "LIVEKIT_DOMAIN=${{ secrets.DOMAIN }}" >> .env
+            echo "LIVEKIT_API_KEY=${{ secrets.KEY }}" >> .env
+            echo "LIVEKIT_API_SECRET=${{ secrets.SECRET }}" >> .env
             
             sudo chmod +x init-letsencrypt.sh configfiles.sh
             sudo chown ubuntu:ubuntu .env
