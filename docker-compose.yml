@@ -51,10 +51,10 @@ services:
       - ./nginx/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
   
-  agent:
-    image: agent  
-    env_file: /home/ubuntu/agent-starter-python/.env.local
-    network_mode: "host"
+  #agent:
+  #  image: agent  
+  #  env_file: /home/ubuntu/agent-starter-python/.env.local
+  #  network_mode: "host"
   # Egress
   egress:
     image: livekit/egress:latest
