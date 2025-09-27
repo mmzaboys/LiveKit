@@ -81,11 +81,11 @@ docker compose run --rm --entrypoint "\
     $domain_args \
     --rsa-key-size $rsa_key_size \
     --agree-tos \
+    --non-interactive \
     --force-renewal" certbot
 
 # Reload Nginx to use new certificates
 echo "### Reloading Nginx ..."
 docker compose exec nginx nginx -s reload
-chmod o+x ./configfiles.sh
 
 echo "### All done!"
