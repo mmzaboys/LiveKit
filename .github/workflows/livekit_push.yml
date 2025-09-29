@@ -192,6 +192,7 @@ jobs:
             sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
             unset DRONE_SSH_PREV_COMMAND_EXIT_CODE
+            sudo rm -f /etc/systemd/system/node_exporter.service
 
             # Then create the service file
             echo "🎯 Creating systemd service file..."
