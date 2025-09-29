@@ -195,24 +195,25 @@ jobs:
 
             # Then create the service file
             echo "🎯 Creating systemd service file..."
-            sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
-            [Unit]
-            Description=Node Exporter
-            Documentation=https://github.com/prometheus/node_exporter
-            Wants=network-online.target
-            After=network-online.target
+            echo "[Unit]" > node_exporter.service
+            echo "Description=Node Exporter" >> node_exporter.service
+            echo "Documentation=https://github.com/prometheus/node_exporter" >> node_exporter.service
+            echo "Wants=network-online.target" >> node_exporter.service
+            echo "After=network-online.target" >> node_exporter.service
 
-            [Service]
-            User=node_exporter
-            Group=node_exporter
-            Type=simple
-            Restart=on-failure
-            RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
+            echo "[Service]" >> node_exporter.service
+            echo "User=node_exporter" >> node_exporter.service
+            echo "Group=node_exporter" >> node_exporter.service
+            echo "Type=simple" >> node_exporter.service
+            echo "Restart=on-failure" >> node_exporter.service
+            echo "RestartSec=5" >> node_exporter.service
+            echo "ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/" >> node_exporter.service
 
-            [Install]
-            WantedBy=multi-user.target
-            EOF
+            echo "[Install]" >> node_exporter.service
+            echo "WantedBy=multi-user.target" >> node_exporter.service
+
+            # Move it into place
+            sudo mv node_exporter.service /etc/systemd/system/node_exporter.service
 
             # Reload systemd and start service
             echo "🔄 Starting Node Exporter service..."
