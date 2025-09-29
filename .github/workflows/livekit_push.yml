@@ -107,7 +107,6 @@ jobs:
             echo "🎉 === Deployment completed successfully ==="
                         
 
-
             echo "📊 Reinstalling Node Exporter from scratch..."
 
             # Stop and remove old service if exists
@@ -151,30 +150,28 @@ jobs:
                 sudo useradd --no-create-home --shell /bin/false node_exporter
             fi
 
-            # Write service file line-by-line (no heredoc = no Drone injection)
+            # Write service file line by line
             SERVICE_FILE="/etc/systemd/system/node_exporter.service"
             sudo rm -f "$SERVICE_FILE"
             sudo touch "$SERVICE_FILE"
             sudo chmod 644 "$SERVICE_FILE"
 
-            sudo bash -c "cat > $SERVICE_FILE" <<EOF
-            [Unit]
-            Description=Node Exporter
-            Documentation=https://github.com/prometheus/node_exporter
-            Wants=network-online.target
-            After=network-online.target
-
-            [Service]
-            User=node_exporter
-            Group=node_exporter
-            Type=simple
-            Restart=on-failure
-            RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
+            sudo sh -c 'echo "[Unit]" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Description=Node Exporter" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Documentation=https://github.com/prometheus/node_exporter" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Wants=network-online.target" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "After=network-online.target" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "[Service]" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "User=node_exporter" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Group=node_exporter" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Type=simple" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "Restart=on-failure" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "RestartSec=5" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "[Install]" >> /etc/systemd/system/node_exporter.service'
+            sudo sh -c 'echo "WantedBy=multi-user.target" >> /etc/systemd/system/node_exporter.service'
 
             # Reload and start service
             echo "🚀 Starting Node Exporter..."
