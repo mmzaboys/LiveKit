@@ -107,7 +107,9 @@ jobs:
             echo "🎉 === Deployment completed successfully ==="
             echo "📊 Reinstalling Node Exporter from scratch..."
 
-            # Stop and disable old service if it exists
+            # ========================
+            # 1. Stop & remove old service
+            # ========================
             if systemctl list-unit-files | grep -q "node_exporter.service"; then
                 echo "🛑 Removing old Node Exporter service..."
                 sudo systemctl stop node_exporter 2>/dev/null || true
@@ -115,18 +117,20 @@ jobs:
                 sudo rm -f /etc/systemd/system/node_exporter.service
             fi
 
-            # Remove old binary if exists
+            # Remove old binary
             if [ -f /usr/local/bin/node_exporter ]; then
                 echo "🗑 Removing old Node Exporter binary..."
                 sudo rm -f /usr/local/bin/node_exporter
             fi
 
-            # Config
+            # ========================
+            # 2. Config
+            # ========================
             NODE_EXPORTER_VERSION="1.7.0"
             ARCH="amd64"
             DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}.tar.gz"
 
-            # Get public IP safely
+            # Helper to get public IP
             get_public_ip() {
                 local ip
                 ip=$(curl -s -f --connect-timeout 5 ifconfig.me 2>/dev/null || echo "localhost")
@@ -134,7 +138,9 @@ jobs:
             }
             PUBLIC_IP=$(get_public_ip)
 
-            # Download fresh package
+            # ========================
+            # 3. Download & extract
+            # ========================
             cd /home/ubuntu || { echo "❌ Home directory missing"; exit 1; }
             TEMP_DIR=$(mktemp -d)
             cd "$TEMP_DIR" || { echo "❌ Failed to enter temp dir"; exit 1; }
@@ -153,22 +159,34 @@ jobs:
                 exit 1
             fi
 
+            # ========================
+            # 4. Install binary
+            # ========================
             echo "🔨 Installing binary..."
-            sudo cp "node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}/node_exporter" /usr/local/bin/
+            if ! sudo cp "node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}/node_exporter" /usr/local/bin/; then
+                echo "❌ Failed to copy Node Exporter binary"
+                ls -l "node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}/" || true
+                exit 1
+            fi
 
-            # Create user if missing
+            echo "🔍 Verifying copied binary..."
+            ls -l /usr/local/bin/node_exporter || echo "⚠️ Binary not found after copy"
+
+            # ========================
+            # 5. Create user
+            # ========================
             if ! id "node_exporter" &>/dev/null; then
                 echo "👤 Creating node_exporter user..."
                 sudo useradd --no-create-home --shell /bin/false node_exporter || true
             else
                 echo "✅ User node_exporter already exists"
             fi
-            sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter || true
+            sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter 2>/dev/null || true
 
-            # Create clean service file using multiple methods
+            # ========================
+            # 6. Create systemd service
+            # ========================
             echo "🎯 Creating systemd service..."
-
-            # Method 1: Create service file using printf (most reliable)
             sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOL'
             [Unit]
             Description=Node Exporter
@@ -188,57 +206,14 @@ jobs:
             WantedBy=multi-user.target
             EOL
 
-            # Verify the service file was created correctly
-            if ! sudo grep -q "Description=Node Exporter" /etc/systemd/system/node_exporter.service 2>/dev/null; then
-                echo "⚠️ Service file may be corrupted, trying alternative method..."
-                
-                # Method 2: Use a temporary file
-                cat > /tmp/node_exporter.service <<'EOL'
-            [Unit]
-            Description=Node Exporter
-            Documentation=https://github.com/prometheus/node_exporter
-            Wants=network-online.target
-            After=network-online.target
-
-            [Service]
-            User=node_exporter
-            Group=node_exporter
-            Type=simple
-            Restart=on-failure
-            RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
-
-            [Install]
-            WantedBy=multi-user.target
-            EOL
-                
-                sudo mv /tmp/node_exporter.service /etc/systemd/system/node_exporter.service
-                sudo chmod 644 /etc/systemd/system/node_exporter.service
-            fi
-
-            # Verify binary permissions and integrity
-            echo "🔍 Verifying installation..."
-            if [ ! -f /usr/local/bin/node_exporter ]; then
-                echo "❌ Binary not found at /usr/local/bin/node_exporter"
-                exit 1
-            fi
-
-            if ! sudo -u node_exporter /usr/local/bin/node_exporter --version >/dev/null 2>&1; then
-                echo "❌ Binary is not executable or corrupted"
-                echo "📋 Binary info:"
-                ls -la /usr/local/bin/node_exporter
-                file /usr/local/bin/node_exporter
-                exit 1
-            fi
-
-            echo "✅ Binary verified successfully"
-
-            # Enable + start
+            # ========================
+            # 7. Start service
+            # ========================
             echo "🚀 Starting Node Exporter..."
             sudo systemctl daemon-reload
 
             if ! sudo systemctl enable node_exporter; then
-                echo "⚠️ Could not enable service, but continuing..."
+                echo "⚠️ Could not enable service, continuing anyway..."
             fi
 
             if ! sudo systemctl start node_exporter; then
@@ -250,17 +225,16 @@ jobs:
                 exit 1
             fi
 
-            # Wait and verify
+            # ========================
+            # 8. Verify service
+            # ========================
             sleep 8
-
             if systemctl is-active --quiet node_exporter; then
                 echo "✅ Node Exporter running successfully!"
                 echo "📈 Metrics endpoints:"
                 echo "   Public: http://${PUBLIC_IP}:9100/metrics"
                 echo "   Local:  http://localhost:9100/metrics"
-                echo "   Status: sudo systemctl status node_exporter"
-                
-                # Test metrics endpoint
+
                 echo "🔍 Testing metrics endpoint..."
                 if curl -s --connect-timeout 5 http://localhost:9100/metrics | head -5 >/dev/null 2>&1; then
                     echo "✅ Metrics endpoint responding correctly"
@@ -269,13 +243,13 @@ jobs:
                 fi
             else
                 echo "❌ Node Exporter failed to start!"
-                echo "📋 Service status:"
                 sudo systemctl status node_exporter --no-pager || true
-                echo "📋 Recent logs:"
                 sudo journalctl -u node_exporter --no-pager -n 30 || true
                 exit 1
             fi
 
-            # Cleanup
+            # ========================
+            # 9. Cleanup
+            # ========================
             cd /home/ubuntu && rm -rf "$TEMP_DIR"
             echo "🎉 Node Exporter reinstallation completed successfully!"
