@@ -157,9 +157,10 @@ jobs:
 
             # Create service file without using heredoc to avoid Drone injection
             echo "🎯 Creating systemd service (avoiding Drone injection)..."
-            sudo bash -c 'cat > /etc/systemd/system/node_exporter.service' <<'ENDOFFILE'
+            sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
             [Unit]
             Description=Node Exporter
+            Documentation=https://github.com/prometheus/node_exporter
             Wants=network-online.target
             After=network-online.target
 
@@ -169,11 +170,12 @@ jobs:
             Type=simple
             Restart=on-failure
             RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter
+            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
 
             [Install]
             WantedBy=multi-user.target
-            ENDOFFILE
+            EOF
+
 
             # Alternative method if above still gets corrupted
             if ! sudo grep -q "Description=Node Exporter" /etc/systemd/system/node_exporter.service 2>/dev/null; then
