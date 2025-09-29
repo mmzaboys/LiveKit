@@ -155,8 +155,9 @@ jobs:
             sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
             sudo chmod 755 /usr/local/bin/node_exporter
 
-            echo "🎯 Creating systemd service..."
-            sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
+            # Create service file without using heredoc to avoid Drone injection
+            echo "🎯 Creating systemd service (avoiding Drone injection)..."
+            sudo bash -c 'cat > /etc/systemd/system/node_exporter.service' <<'ENDOFFILE'
             [Unit]
             Description=Node Exporter
             Wants=network-online.target
@@ -172,7 +173,36 @@ jobs:
 
             [Install]
             WantedBy=multi-user.target
-            EOF
+            ENDOFFILE
+
+            # Alternative method if above still gets corrupted
+            if ! sudo grep -q "Description=Node Exporter" /etc/systemd/system/node_exporter.service 2>/dev/null; then
+                echo "⚠️ Service file corrupted, using alternative method..."
+                
+                # Create service file line by line
+                sudo rm -f /etc/systemd/system/node_exporter.service
+                sudo touch /etc/systemd/system/node_exporter.service
+                sudo chmod 644 /etc/systemd/system/node_exporter.service
+                
+                sudo sh -c 'echo "[Unit]" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "Description=Node Exporter" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "Wants=network-online.target" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "After=network-online.target" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "[Service]" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "User=node_exporter" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "Group=node_exporter" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "Type=simple" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "Restart=on-failure" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "RestartSec=5" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "ExecStart=/usr/local/bin/node_exporter" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "[Install]" >> /etc/systemd/system/node_exporter.service'
+                sudo sh -c 'echo "WantedBy=multi-user.target" >> /etc/systemd/system/node_exporter.service'
+            fi
+
+            echo "🔍 Verifying service file..."
+            sudo cat /etc/systemd/system/node_exporter.service
 
             echo "🚀 Starting service..."
             sudo systemctl daemon-reload
@@ -190,11 +220,6 @@ jobs:
                 echo "📈 Metrics available at:"
                 echo "   http://${PUBLIC_IP}:9100/metrics"
                 echo "   http://localhost:9100/metrics"
-                
-                # Quick test
-                if curl -s --connect-timeout 2 http://localhost:9100 >/dev/null; then
-                    echo "🌐 Web interface is accessible"
-                fi
             else
                 echo "❌ Service failed to start"
                 sudo systemctl status node_exporter --no-pager
