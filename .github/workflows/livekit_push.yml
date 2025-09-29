@@ -159,11 +159,11 @@ jobs:
             # Create user if missing
             if ! id "node_exporter" &>/dev/null; then
                 echo "👤 Creating node_exporter user..."
-                sudo useradd --no-create-home --shell /bin/false node_exporter
+                sudo useradd --no-create-home --shell /bin/false node_exporter || true
             else
                 echo "✅ User node_exporter already exists"
             fi
-            sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
+            sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter || true
 
             # Create clean service file using multiple methods
             echo "🎯 Creating systemd service..."
