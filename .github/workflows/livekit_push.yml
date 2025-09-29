@@ -191,7 +191,10 @@ jobs:
 
             sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
-            echo "🎯 Creating systemd service..."
+            unset DRONE_SSH_PREV_COMMAND_EXIT_CODE
+
+            # Then create the service file
+            echo "🎯 Creating systemd service file..."
             sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
             [Unit]
             Description=Node Exporter
@@ -210,7 +213,6 @@ jobs:
             [Install]
             WantedBy=multi-user.target
             EOF
-
 
             # Reload systemd and start service
             echo "🔄 Starting Node Exporter service..."
