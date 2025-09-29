@@ -1,4 +1,4 @@
-name: Deploy LiveKit to AWS VM
+name: Deploy LiveKit to gcp VM
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to AWS EC2
+      - name: Deploy to gcp vm
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVERIP }}
@@ -192,7 +192,7 @@ jobs:
             sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
             echo "🎯 Creating systemd service..."
-            sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<EOF
+            sudo bash -c 'cat > /etc/systemd/system/node_exporter.service <<EOL
             [Unit]
             Description=Node Exporter
             Documentation=https://github.com/prometheus/node_exporter
@@ -205,13 +205,12 @@ jobs:
             Type=simple
             Restart=on-failure
             RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter \
-                --web.listen-address=:9100 \
-                --path.rootfs=/
+            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
 
             [Install]
             WantedBy=multi-user.target
-            EOF
+            EOL'
+
 
             # Reload systemd and start service
             echo "🔄 Starting Node Exporter service..."
