@@ -212,7 +212,7 @@ jobs:
             echo "[Install]" >> node_exporter.service
             echo "WantedBy=multi-user.target" >> node_exporter.service
 
-            # Move it into place
+            # Move it into place##
             sudo mv node_exporter.service /etc/systemd/system/node_exporter.service
 
             # Reload systemd and start service
