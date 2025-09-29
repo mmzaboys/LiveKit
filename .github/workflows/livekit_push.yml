@@ -107,129 +107,103 @@ jobs:
             echo "🎉 === Deployment completed successfully ==="
                         
 
+
             echo "📊 Reinstalling Node Exporter from scratch..."
 
-            # Clean up any existing installation
-            echo "🧹 Cleaning up existing installation..."
-            sudo systemctl stop node_exporter 2>/dev/null || true
-            sudo systemctl disable node_exporter 2>/dev/null || true
-            sudo rm -f /etc/systemd/system/node_exporter.service
-            sudo rm -f /usr/local/bin/node_exporter
+            # Stop and remove old service if it exists
+            if systemctl list-unit-files | grep -q "node_exporter.service"; then
+                echo "🛑 Removing old Node Exporter service..."
+                sudo systemctl stop node_exporter 2>/dev/null || true
+                sudo systemctl disable node_exporter 2>/dev/null || true
+                sudo rm -f /etc/systemd/system/node_exporter.service
+            fi
+
+            # Remove old binary if exists
+            if [ -f /usr/local/bin/node_exporter ]; then
+                echo "🗑 Removing old Node Exporter binary..."
+                sudo rm -f /usr/local/bin/node_exporter
+            fi
 
             # Configuration
-            VERSION="1.7.0"
+            NODE_EXPORTER_VERSION="1.7.0"
             ARCH="amd64"
-            DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/node_exporter-${VERSION}.linux-${ARCH}.tar.gz"
+            DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}.tar.gz"
 
-            # Create temporary directory
-            cd /tmp
+            # Get public IP safely
+            get_public_ip() {
+                curl -s -f --connect-timeout 5 ifconfig.me 2>/dev/null || echo "localhost"
+            }
+            PUBLIC_IP=$(get_public_ip)
+
+            # Download fresh package
+            cd /home/ubuntu || exit 1
             TEMP_DIR=$(mktemp -d)
             cd "$TEMP_DIR"
 
-            echo "📥 Downloading Node Exporter v${VERSION}..."
-            wget -q --timeout=30 "$DOWNLOAD_URL" || {
-                echo "❌ Download failed"
-                exit 1
-            }
+            echo "📥 Downloading Node Exporter v${NODE_EXPORTER_VERSION}..."
+            wget -q --timeout=30 "$DOWNLOAD_URL"
 
-            echo "📦 Extracting archive..."
-            tar xzf "node_exporter-${VERSION}.linux-${ARCH}.tar.gz" || {
-                echo "❌ Extraction failed"
-                exit 1
-            }
+            echo "📦 Extracting..."
+            tar xzf "node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}.tar.gz"
 
-            echo "🔍 Testing binary..."
-            "./node_exporter-${VERSION}.linux-${ARCH}/node_exporter" --version || {
-                echo "❌ Binary test failed"
-                exit 1
-            }
-
-            echo "🔨 Installing binary to /usr/local/bin..."
-            sudo cp "node_exporter-${VERSION}.linux-${ARCH}/node_exporter" /usr/local/bin/
-
-            echo "👤 Setting up user..."
-            if ! id "node_exporter" &>/dev/null; then
-                sudo useradd --no-create-home --shell /bin/false node_exporter
-            fi
-
+            echo "🔨 Installing binary..."
+            sudo cp "node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}/node_exporter" /usr/local/bin/
             sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
             sudo chmod 755 /usr/local/bin/node_exporter
 
-            # Create service file without using heredoc to avoid Drone injection
-            echo "🎯 Creating systemd service (avoiding Drone injection)..."
-            sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
-            [Unit]
-            Description=Node Exporter
-            Documentation=https://github.com/prometheus/node_exporter
-            Wants=network-online.target
-            After=network-online.target
-
-            [Service]
-            User=node_exporter
-            Group=node_exporter
-            Type=simple
-            Restart=on-failure
-            RestartSec=5
-            ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
-
-
-            # Alternative method if above still gets corrupted
-            if ! sudo grep -q "Description=Node Exporter" /etc/systemd/system/node_exporter.service 2>/dev/null; then
-                echo "⚠️ Service file corrupted, using alternative method..."
-                
-                # Create service file line by line
-                sudo rm -f /etc/systemd/system/node_exporter.service
-                sudo touch /etc/systemd/system/node_exporter.service
-                sudo chmod 644 /etc/systemd/system/node_exporter.service
-                
-                sudo sh -c 'echo "[Unit]" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "Description=Node Exporter" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "Wants=network-online.target" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "After=network-online.target" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "[Service]" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "User=node_exporter" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "Group=node_exporter" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "Type=simple" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "Restart=on-failure" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "RestartSec=5" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "ExecStart=/usr/local/bin/node_exporter" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "[Install]" >> /etc/systemd/system/node_exporter.service'
-                sudo sh -c 'echo "WantedBy=multi-user.target" >> /etc/systemd/system/node_exporter.service'
+            # Create node_exporter user if missing
+            if ! id "node_exporter" &>/dev/null; then
+                echo "👤 Creating node_exporter user..."
+                sudo useradd --no-create-home --shell /bin/false node_exporter
             fi
 
-            echo "🔍 Verifying service file..."
-            sudo cat /etc/systemd/system/node_exporter.service
+            # Create clean systemd service line-by-line (Drone-safe)
+            SERVICE_FILE=/etc/systemd/system/node_exporter.service
+            sudo rm -f "$SERVICE_FILE"
+            sudo touch "$SERVICE_FILE"
+            sudo chmod 644 "$SERVICE_FILE"
 
-            echo "🚀 Starting service..."
+            for line in \
+            "[Unit]" \
+            "Description=Node Exporter" \
+            "Documentation=https://github.com/prometheus/node_exporter" \
+            "Wants=network-online.target" \
+            "After=network-online.target" \
+            "" \
+            "[Service]" \
+            "User=node_exporter" \
+            "Group=node_exporter" \
+            "Type=simple" \
+            "Restart=on-failure" \
+            "RestartSec=5" \
+            "ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100 --path.rootfs=/" \
+            "" \
+            "[Install]" \
+            "WantedBy=multi-user.target"
+            do
+                sudo sh -c "echo \"$line\" >> $SERVICE_FILE"
+            done
+
+            # Start Node Exporter
+            echo "🚀 Starting Node Exporter..."
             sudo systemctl daemon-reload
             sudo systemctl enable node_exporter
             sudo systemctl start node_exporter
 
-            echo "⏳ Waiting for service to start..."
+            # Verify service
             sleep 5
-
             if systemctl is-active --quiet node_exporter; then
                 echo "✅ Node Exporter is running successfully!"
-                
-                # Get public IP
-                PUBLIC_IP=$(curl -s -f --connect-timeout 3 ifconfig.me 2>/dev/null || echo "localhost")
                 echo "📈 Metrics available at:"
-                echo "   http://${PUBLIC_IP}:9100/metrics"
-                echo "   http://localhost:9100/metrics"
+                echo "   Public: http://${PUBLIC_IP}:9100/metrics"
+                echo "   Local:  http://localhost:9100/metrics"
             else
-                echo "❌ Service failed to start"
+                echo "❌ Node Exporter failed to start!"
                 sudo systemctl status node_exporter --no-pager
                 exit 1
             fi
 
-            echo "🧹 Cleaning up..."
+            # Cleanup
             cd /tmp
             rm -rf "$TEMP_DIR"
-
-            echo "🎉 Node Exporter installation completed!"
+            echo "🎉 Node Exporter reinstallation completed successfully!"
