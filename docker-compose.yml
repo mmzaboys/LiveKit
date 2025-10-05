@@ -8,8 +8,8 @@ services:
     network_mode: "host"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
+    #  - ./nginx/certbot/conf:/etc/letsencrypt
+    #  - ./nginx/certbot/www:/var/www/certbot
 
   # SIP service
   sip:
@@ -31,25 +31,25 @@ services:
       - ./redis.conf:/etc/redis.conf
 #############
 ######################################
-  nginx:
-    container_name: nginx
-    image: nginx:latest
-    restart: unless-stopped
-    env_file: .env
-    network_mode: "host"
-    volumes:
-      - ./nginx/secure/:/etc/nginx/templates/
-      - /etc/localtime:/etc/localtime:ro
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
-      - ./nginx/99-autoreload.sh:/docker-entrypoint.d/99-autoreload.sh  # Script to autoreload Nginx when certs are renewed
+  #nginx:
+  #  container_name: nginx
+  #  image: nginx:latest
+  #  restart: unless-stopped
+  #  env_file: .env
+  #  network_mode: "host"
+  #  volumes:
+  #    - ./nginx/secure/:/etc/nginx/templates/
+  #    - /etc/localtime:/etc/localtime:ro
+  #    - ./nginx/certbot/conf:/etc/letsencrypt
+  #    - ./nginx/certbot/www:/var/www/certbot
+  #    - ./nginx/99-autoreload.sh:/docker-entrypoint.d/99-autoreload.sh  # Script to autoreload Nginx when certs are renewed
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
+  #certbot:
+  #  image: certbot/certbot
+  #  volumes:
+  #    - ./nginx/certbot/conf:/etc/letsencrypt
+  #    - ./nginx/certbot/www:/var/www/certbot
+  #  entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
   ###
   #agent:
   #  image: agent  

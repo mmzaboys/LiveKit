@@ -19,13 +19,13 @@ rtc:
   enable_loopback_candidate: false
 redis:
   address: localhost:6379
-turn:
-  enabled: true
-  domain: ${LIVEKIT_DOMAIN}
-  cert_file: /etc/letsencrypt/live/${LIVEKIT_DOMAIN}/fullchain.pem
-  key_file: /etc/letsencrypt/live/${LIVEKIT_DOMAIN}/privkey.pem
-  tls_port: 5349
-  udp_port: 3478
+#turn:
+#  enabled: true
+#  domain: ${LIVEKIT_DOMAIN}
+#  cert_file: /etc/letsencrypt/live/${LIVEKIT_DOMAIN}/fullchain.pem
+#  key_file: /etc/letsencrypt/live/${LIVEKIT_DOMAIN}/privkey.pem
+#  tls_port: 5349
+#  udp_port: 3478
 prometheus_port: 6789
 keys:
   ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
@@ -53,11 +53,11 @@ log_level: info
 api_key: ${LIVEKIT_API_KEY}
 api_secret: ${LIVEKIT_API_SECRET}
 ws_url: wss://${LIVEKIT_DOMAIN}
-s3:
-  access_key: ${AWS_ACCESS_KEY_ID} 
-  secret: ${AWS_SECRET_ACCESS_KEY} 
-  region: ${AWS_DEFAULT_REGION} 
-  bucket: ${bucket} 
+#s3:
+#  access_key: ${AWS_ACCESS_KEY_ID} 
+#  secret: ${AWS_SECRET_ACCESS_KEY} 
+#  region: ${AWS_DEFAULT_REGION} 
+#  bucket: ${bucket} 
 EOF
 
 cat > "./nginx/secure/default.conf.template" <<EOF
